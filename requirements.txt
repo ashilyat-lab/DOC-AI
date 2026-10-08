@@ -1,0 +1,11 @@
+flask
+werkzeug
+pypdf
+langchain
+langchain-community
+faiss-cpu
+sentence-transformers
+torch
+llama-cpp-python==0.2.79
+huggingface-hub==0.23.3
+langchain-huggingface # New package to resolve deprecation warning

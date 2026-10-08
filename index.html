@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>CyberSecureDocAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style type="text/tailwindcss">
+        :root { --primary-color: #38e07b; --background-color: #111714; --secondary-background: #1c2620; --text-color: #ffffff; --secondary-text-color: #9eb7a8; --border-color: #29382f; }
+        body { font-family: 'Spline Sans', sans-serif; }
+        .btn-primary { @apply flex cursor-pointer items-center justify-center rounded-full bg-[var(--primary-color)] px-6 py-3 text-sm font-bold text-[var(--background-color)] transition-colors hover:bg-opacity-80; }
+        .form-input { @apply block w-full rounded-md border-0 bg-[var(--secondary-background)] py-2.5 text-white shadow-sm ring-1 ring-inset ring-[var(--border-color)] placeholder:text-[var(--secondary-text-color)] focus:ring-2 focus:ring-inset focus:ring-[var(--primary-color)] sm:text-sm; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--secondary-background); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-[var(--background-color)] text-[var(--text-color)]">
+    <div id="app-container" class="flex min-h-screen flex-col">
+        </div>
+
+    <script>
+        const app = {
+            isLoggedIn: false,
+            user: {},
+            currentPage: ''
+        };
+
+        const appContainer = document.getElementById('app-container');
+
+        // --- TEMPLATES FOR EACH PAGE/VIEW ---
+        const AppShellTemplate = (content) => `
+            <header class="sticky top-0 z-10 border-b border-[var(--border-color)] bg-[var(--background-color)]/80 backdrop-blur-sm">
+                <div class="container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+                    <a href="#" data-page="chatbot" class="flex items-center gap-4">
+                        <svg class="h-8 w-8 text-[var(--primary-color)]" fill="none" viewBox="0 0 48 48"><path clip-rule="evenodd" d="M39.475 21.6262C40.358 21.4363 40.6863 21.5589 40.7581 21.5934C40.7876 21.655 40.8547 21.857 40.8082 22.3336C40.7408 23.0255 40.4502 24.0046 39.8572 25.2301C38.6799 27.6631 36.5085 30.6631 33.5858 33.5858C30.6631 36.5085 27.6632 38.6799 25.2301 39.8572C24.0046 40.4502 23.0255 40.7407 22.3336 40.8082C21.8571 40.8547 21.6551 40.7875 21.5934 40.7581C21.5589 40.6863 21.4363 40.358 21.6262 39.475C21.8562 38.4054 22.4689 36.9657 23.5038 35.2817C24.7575 33.2417 26.5497 30.9744 28.7621 28.762C30.9744 26.5497 33.2417 24.7574 35.2817 23.5037C36.9657 22.4689 38.4054 21.8562 39.475 21.6262ZM4.41189 29.2403L18.7597 43.5881C19.8813 44.7097 21.4027 44.9179 22.7217 44.7893C24.0585 44.659 25.5148 44.1631 26.9723 43.4579C29.9052 42.0387 33.2618 39.5667 36.4142 36.4142C39.5667 33.2618 42.0387 29.9052 43.4579 26.9723C44.1631 25.5148 44.659 24.0585 44.7893 22.7217C44.9179 21.4027 44.7097 19.8813 43.5881 18.7597L29.2403 4.41187C27.8527 3.02428 25.8765 3.02573 24.2861 3.36776C22.6081 3.72863 20.7334 4.58419 18.8396 5.74801C16.4978 7.18716 13.9881 9.18353 11.5858 11.5858C9.18354 13.988 7.18717 16.4978 5.74802 18.8396C4.58421 20.7334 3.72865 22.6081 3.36778 24.2861C3.02574 25.8765 3.02429 27.8527 4.41189 29.2403Z" fill="currentColor" fill-rule="evenodd"></path></svg>
+                        <h1 class="text-xl font-bold tracking-tight">CyberSecureDocAI</h1>
+                    </a>
+                    <nav class="hidden items-center gap-8 md:flex">
+                        <a href="#" data-page="chatbot" class="text-sm font-medium ${app.currentPage === 'chatbot' ? 'text-white' : 'text-[var(--secondary-text-color)] hover:text-[var(--text-color)]'}">Chatbot</a>
+                        <a href="#" data-page="documents" class="text-sm font-medium ${app.currentPage === 'documents' ? 'text-white' : 'text-[var(--secondary-text-color)] hover:text-[var(--text-color)]'}">Documents</a>
+                    </nav>
+                     <button id="logout-button" class="btn-primary !px-4 !py-2">Logout</button>
+                </div>
+            </header>
+            <main class="container mx-auto flex-1 px-4 py-8 sm:px-6 lg:px-8">
+                ${content}
+            </main>
+        `;
+
+        const ChatbotPageTemplate = () => `<div class="flex h-full max-h-[calc(100vh-150px)]"><aside class="w-80 bg-[#151c18] p-6 flex flex-col justify-between rounded-l-xl"><div id="document-list-container"><h3 class="text-xl font-bold mb-6">Your Documents</h3><div id="document-list" class="space-y-4 overflow-y-auto"></div></div><label class="btn-primary mt-4" for="file-upload"><span class="material-symbols-outlined">upload_file</span><span>Upload Documents</span><input class="hidden" id="file-upload" multiple type="file" /></label></aside><main class="flex-1 flex flex-col bg-[#1c2620] rounded-r-xl"><div id="chat-window" class="flex-1 space-y-6 overflow-y-auto p-10"><div class="flex items-end gap-3"><div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0" style='background-image: url("https://api.dicebear.com/8.x/bottts/svg?seed=Cyber");'></div><div class="flex flex-col gap-1 items-start"><p class="text-[#9eb7a8] text-sm font-medium">CyberSecureDocAI</p><div class="rounded-2xl bg-[#29382f] px-4 py-3 text-white max-w-lg"><p>Hello ${app.user.username}! Upload some documents or ask a question about your existing ones.</p></div></div></div></div><div class="mt-auto p-6"><form id="chat-form" class="relative"><input id="chat-input" class="w-full rounded-full border border-[#3d5245] bg-[#111714] py-3 pl-6 pr-20 text-white placeholder:text-[#9eb7a8] focus:border-[var(--primary-color)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-color)]" placeholder="Type your question..." type="text" /><div class="absolute inset-y-0 right-0 flex items-center pr-4"><button class="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-color)] text-[#111714]" type="submit"><span class="material-symbols-outlined">send</span></button></div></form></div></main></div>`;
+        const DocumentsPageTemplate = () => `<div class="mx-auto max-w-4xl"><div class="space-y-8"><div><h1 class="text-4xl font-bold tracking-tighter">Manage Your Documents</h1><p class="mt-2 text-[var(--secondary-text-color)]">A list of all the documents you have uploaded. Delete any you no longer need.</p></div><div id="document-list-container" class="space-y-4 rounded-xl border border-[var(--border-color)] bg-[var(--secondary-background)] p-6 sm:p-8"><div id="document-list"></div></div></div></div>`;
+        const AuthPageTemplate = (isLogin = true) => {
+            const title = isLogin ? 'Sign in to your account' : 'Create a new account';
+            const subtitle = isLogin ? 'Or <a href="#" data-page="register" class="font-medium text-[var(--primary-color)] hover:underline">create an account</a>' : 'Or <a href="#" data-page="login" class="font-medium text-[var(--primary-color)] hover:underline">sign in to your account</a>';
+            return `
+            <main class="w-full max-w-md mx-auto p-6">
+                <div class="mt-7 bg-[var(--secondary-background)] border border-[var(--border-color)] rounded-xl shadow-sm">
+                    <div class="p-4 sm:p-7">
+                        <div class="text-center">
+                            <h1 class="block text-2xl font-bold text-white">${title}</h1>
+                            <p class="mt-2 text-sm text-[var(--secondary-text-color)]">${subtitle}</p>
+                        </div>
+                        <div class="mt-5">
+                            <form id="${isLogin ? 'login-form' : 'register-form'}">
+                                <div class="grid gap-y-4">
+                                    ${!isLogin ? `<div><label for="username" class="block text-sm mb-2">Username</label><div class="relative"><input type="text" id="username" name="username" class="form-input" required></div></div>` : ''}
+                                    <div><label for="email" class="block text-sm mb-2">Email address</label><div class="relative"><input type="email" id="email" name="email" class="form-input" required></div></div>
+                                    <div><label for="password" class="block text-sm mb-2">Password</label><div class="relative"><input type="password" id="password" name="password" class="form-input" required></div></div>
+                                    <button type="submit" class="btn-primary w-full !py-3 !text-base">${isLogin ? 'Sign in' : 'Register'}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>`;
+        };
+
+
+        // --- ROUTING LOGIC ---
+        const renderPage = async (page) => {
+            app.currentPage = page;
+            let content = '';
+            if (app.isLoggedIn) {
+                switch(page) {
+                    case 'documents': content = DocumentsPageTemplate(); break;
+                    default: app.currentPage = 'chatbot'; content = ChatbotPageTemplate(); break;
+                }
+                appContainer.innerHTML = AppShellTemplate(content);
+                await postRenderLoggedIn();
+            } else {
+                 switch(page) {
+                    case 'register': content = AuthPageTemplate(false); break;
+                    default: app.currentPage = 'login'; content = AuthPageTemplate(true); break;
+                }
+                appContainer.innerHTML = content;
+            }
+        };
+
+        const postRenderLoggedIn = async () => {
+            if (app.currentPage === 'chatbot' || app.currentPage === 'documents') {
+                await updateDocumentList();
+            }
+        };
+
+        // --- API & EVENT HANDLERS ---
+        const handleAuth = async (endpoint, payload) => {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message);
+
+                // On successful login/register, check session to update state and re-render
+                await checkSession();
+
+            } catch(error) {
+                alert(`Authentication Error: ${error.message}`);
+            }
+        };
+
+        const handleLogout = async () => {
+            await fetch('/api/logout');
+            app.isLoggedIn = false;
+            app.user = {};
+            window.location.hash = 'login';
+        };
+
+        const handleFileUpload = async (files) => {
+            const formData = new FormData();
+            let fileAdded = false;
+            for(const file of files) {
+                if(file.type === 'application/pdf') {
+                    formData.append('files', file);
+                    fileAdded = true;
+                }
+            }
+            if (!fileAdded) return;
+
+            const uploadBtn = document.querySelector('label[for="file-upload"]');
+            uploadBtn.innerHTML = `<span>Processing...</span>`;
+
+            try {
+                const response = await fetch('/api/upload', { method: 'POST', body: formData });
+                const result = await response.json();
+                if(!response.ok) throw new Error(result.message);
+                alert(result.message);
+                await updateDocumentList();
+            } catch(error) {
+                alert(`Upload Error: ${error.message}`);
+            } finally {
+                 uploadBtn.innerHTML = `<span class="material-symbols-outlined">upload_file</span><span>Upload Documents</span><input class="hidden" id="file-upload" multiple type="file" />`;
+            }
+        };
+
+        const updateDocumentList = async () => {
+            const listContainers = document.querySelectorAll('#document-list');
+            if (listContainers.length === 0) return;
+             listContainers.forEach(c => c.innerHTML = `<p class="text-[var(--secondary-text-color)]">Loading...</p>`);
+
+            try {
+                const response = await fetch('/api/documents');
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                listContainers.forEach(container => {
+                    container.innerHTML = '';
+                    if (data.documents.length > 0) {
+                        data.documents.forEach(docName => {
+                            const docElement = document.createElement('div');
+                            docElement.className = 'document-item flex items-center justify-between rounded-full bg-[#1c2620] p-3 animate-fade-in';
+                            docElement.innerHTML = `
+                                <div class="flex items-center gap-4 overflow-hidden">
+                                    <div class="flex items-center justify-center rounded-full bg-[#29382f] p-2 flex-shrink-0"><span class="material-symbols-outlined text-white">description</span></div>
+                                    <p class="truncate font-medium" title="${docName}">${docName}</p>
+                                </div>
+                                <button class="remove-doc-button text-[#9eb7a8] hover:text-white flex-shrink-0" data-filename="${docName}"><span class="material-symbols-outlined">close</span></button>
+                            `;
+                            container.appendChild(docElement);
+                        });
+                    } else {
+                         container.innerHTML = `<p class="text-center text-[var(--secondary-text-color)]">No documents uploaded yet.</p>`;
+                    }
+                });
+            } catch (error) {
+                console.error("Failed to load documents:", error);
+                listContainers.forEach(c => c.innerHTML = `<p class="text-red-500">Error loading documents.</p>`);
+            }
+        };
+
+        const deleteDocument = async (filename) => {
+            if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+            try {
+                const response = await fetch(`/api/delete/${filename}`, { method: 'DELETE' });
+                const result = await response.json();
+                if(!response.ok) throw new Error(result.message);
+                alert(result.message);
+                await updateDocumentList();
+            } catch(error) {
+                alert(`Error deleting file: ${error.message}`);
+            }
+        };
+
+        const handleChatSubmit = async (e) => {
+            e.preventDefault();
+            const chatInput = document.getElementById('chat-input');
+            const chatWindow = document.getElementById('chat-window');
+            const userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+
+            const userMsgHtml = `<div class="flex items-end gap-3 justify-end animate-fade-in"><div class="flex flex-col gap-1 items-end"><p class="text-[#9eb7a8] text-sm font-medium">You</p><div class="rounded-2xl bg-[var(--primary-color)] px-4 py-3 text-[#111714] max-w-lg"><p>${userMessage}</p></div></div></div>`;
+            chatWindow.insertAdjacentHTML('beforeend', userMsgHtml);
+            chatInput.value = '';
+
+            const thinkingHtml = `<div id="thinking-indicator" class="flex items-end gap-3 animate-fade-in"><div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0" style='background-image: url("https://api.dicebear.com/8.x/bottts/svg?seed=Cyber");'></div><div class="flex flex-col gap-1 items-start"><p class="text-[#9eb7a8] text-sm font-medium">CyberSecureDocAI</p><div class="rounded-2xl bg-[#29382f] px-4 py-3 text-white max-w-lg"><p>Thinking...</p></div></div></div>`;
+            chatWindow.insertAdjacentHTML('beforeend', thinkingHtml);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            try {
+                const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: userMessage }) });
+                const result = await response.json();
+                if(!response.ok) throw new Error(result.reply);
+
+                document.getElementById('thinking-indicator').remove();
+                const botMsgHtml = `<div class="flex items-end gap-3 animate-fade-in"><div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0" style='background-image: url("https://api.dicebear.com/8.x/bottts/svg?seed=Cyber");'></div><div class="flex flex-col gap-1 items-start"><p class="text-[#9eb7a8] text-sm font-medium">CyberSecureDocAI</p><div class="rounded-2xl bg-[#29382f] px-4 py-3 text-white max-w-lg"><p>${result.reply.replace(/\n/g, '<br>')}</p></div></div></div>`;
+                chatWindow.insertAdjacentHTML('beforeend', botMsgHtml);
+            } catch (error) {
+                document.getElementById('thinking-indicator').remove();
+                 const errorMsgHtml = `<div class="flex items-end gap-3 animate-fade-in"><div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0" style='background-image: url("https://api.dicebear.com/8.x/bottts/svg?seed=Cyber");'></div><div class="flex flex-col gap-1 items-start"><p class="text-[#9eb7a8] text-sm font-medium">CyberSecureDocAI</p><div class="rounded-2xl bg-red-500/20 px-4 py-3 text-red-300 max-w-lg"><p>Error: ${error.message}</p></div></div></div>`;
+                chatWindow.insertAdjacentHTML('beforeend', errorMsgHtml);
+            } finally {
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        };
+
+        // --- EVENT DELEGATION ---
+        appContainer.addEventListener('click', (e) => {
+            const navLink = e.target.closest('a[data-page]');
+            if (navLink) {
+                e.preventDefault();
+                window.location.hash = navLink.dataset.page;
+            }
+
+            const removeBtn = e.target.closest('.remove-doc-button');
+            if (removeBtn) {
+                deleteDocument(removeBtn.dataset.filename);
+            }
+
+            if (e.target.closest('#logout-button')) {
+                handleLogout();
+            }
+        });
+
+        appContainer.addEventListener('change', (e) => {
+            if (e.target.id === 'file-upload') {
+                handleFileUpload(e.target.files);
+            }
+        });
+
+        appContainer.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (e.target.id === 'chat-form') {
+                handleChatSubmit(e);
+            }
+            if (e.target.id === 'login-form') {
+                const formData = new FormData(e.target);
+                const payload = Object.fromEntries(formData.entries());
+                handleAuth('/api/login', payload);
+            }
+            if (e.target.id === 'register-form') {
+                const formData = new FormData(e.target);
+                const payload = Object.fromEntries(formData.entries());
+                handleAuth('/api/register', payload);
+            }
+        });
+
+        window.addEventListener('hashchange', () => {
+             const page = window.location.hash.substring(1);
+             renderPage(page);
+        });
+
+        // --- Initial Load ---
+        const checkSession = async () => {
+            try {
+                const response = await fetch('/api/check_session');
+                const data = await response.json();
+                app.isLoggedIn = data.logged_in;
+                if(data.logged_in) app.user = data.user;
+
+                let page = window.location.hash.substring(1);
+                if(app.isLoggedIn && (page === 'login' || page === 'register')) {
+                    window.location.hash = 'chatbot';
+                } else {
+                    renderPage(page || (app.isLoggedIn ? 'chatbot' : 'login'));
+                }
+            } catch (error) {
+                console.error("Session check failed", error);
+                app.isLoggedIn = false;
+                renderPage('login');
+            }
+        };
+
+        checkSession();
+    </script>
+</body>
+</html>
